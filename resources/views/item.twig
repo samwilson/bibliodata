@@ -1,0 +1,87 @@
+{% import _self as macros %}
+{% extends 'base.twig' %}
+
+{% block content %}
+
+    <h1>
+        <a href="https://www.wikidata.org/wiki/{{ work.id }}" title="View on Wikidata">
+            <img src="https://www.wikidata.org/static/images/project-logos/wikidatawiki.png" height="30" /></a>
+        {{ work.title }}
+        <small>{{ work.editions|length }} edition{% if work.editions|length != 1 %}s{% endif %}</small>
+    </h1>
+    <p>
+        {% if work.authors %}
+            By {% for author in work.authors %}
+                <a href="{{ route('item', author.id) }}">{{ author.title }}</a>{% if loop.last %}.{% else %},{% endif %}
+            {% endfor %}
+        {% endif %}
+        {% if work.publicationYear %}
+            First published {{ work.publicationYear }}.
+        {% elseif editions.0.publicationYear %}
+            First known edition published {{ editions.0.publicationYear }}
+        {% endif %}
+    </p>
+
+    <div class="row">
+        <div class="col-md-12">
+
+            {{ work.wikipediaIntro|raw }}
+
+            <ul class="list-inline">
+                <li>On other databases:</li>
+                <!-- LibraryThing work identifier -->
+                {% if work.claims.P1085 %}
+                <li>
+                    {{ attribute(work.P1085_metadata.labels, lang).value }}:
+                    <a href="https://www.librarything.com/work/{{ work.claims.P1085.0.mainsnak.datavalue.value }}" title="View on LibraryThing">
+                        <img src="http://www.librarything.com/press/logo4_medium.gif" />
+                    </a>
+                </li>
+                {% endif %}
+    
+            </ul>
+        </div>
+    </div>
+    <dl class="dl-horizontal">
+        {% for prop in book.properties %}
+            <dt>{{ attribute( prop.labels, lang).value }}</dt>
+            <dd></dd>
+        {% endfor %}
+    </dl>
+
+    <h2>Editions</h2>
+    {% if not work.editions %}
+        <p>No editions found</p>
+    {% endif %}
+    {% for edition in work.editions %}
+    <div class="panel panel-default">
+        <div class="panel-heading">
+            <a href="https://www.wikidata.org/wiki/{{ edition.id }}" title="View this edition on Wikidata">
+                <img src="https://www.wikidata.org/static/images/project-logos/wikidatawiki.png" height="18" /></a>
+            {{ edition.title }}
+            {% if edition.publicationYear %}({{ edition.publicationYear }}){% endif %}
+        </div>
+        <div class="panel-body">
+
+            <!-- LibraryThing work identifier -->
+            {% if work.claims.P577 %}
+            <p>
+                {{ attribute(work.P1085_metadata.labels, lang).value }}:
+                {% for ms in work.claims.P1085 %}
+                    <a href="">{{ ms.mainsnak.datavalue.value }}</a>{% if not loop.last %}, {% endif %}
+                {% endfor %}
+            </p>
+            {% endif %}
+
+            <p>Download now:
+                <a href="https://tools.wmflabs.org/wsexport/tool/book.php?lang={{ lang }}&format=epub-3&page=" title="Download Epub">
+                    <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/d/d5/EPUB_silk_icon.svg/25px-EPUB_silk_icon.svg.png" alt="Epub icon" /></a>
+                <a href="https://tools.wmflabs.org/wsexport/tool/book.php?lang={{ lang }}&format=pdf-a5&page=" title="Download PDF">
+                    <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/0/0e/Pdfreaders-f.svg/25px-Pdfreaders-f.svg.png" alt="PDF icon" /></a>
+            </p>
+            {{ dump(edition) }}
+        </div>
+    </div>
+    {% endfor %}
+
+{% endblock %}

@@ -1,0 +1,19 @@
+{% extends 'base.twig' %}
+
+{% block content %}
+    
+    <h1>Search results</h1>
+    
+    <ul class="list-unstyled">
+    {% for item in results %}
+        <li>
+            <strong><a href="{{ route('item', item.id) }}">{{ item.title }}</a></strong>
+            by
+            {% for author in item.authors %}
+                <a href="{{ route('item', author.id) }}">{{ author.title }}</a>
+            {% endfor %}
+        </li>
+    {% endfor %}
+    </ul>
+
+{% endblock %}

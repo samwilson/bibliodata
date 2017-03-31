@@ -1,0 +1,20 @@
+checks:
+  php: true
+  javascript: true
+
+filter:
+  excluded_paths:
+    - vendor/
+  dependency_paths:
+    - vendor/
+
+build:
+  tests:
+    override:
+      - composer validate
+      - ./vendor/bin/phpcs
+      -
+        command: './vendor/bin/phpunit --coverage-clover=clover-coverage.xml'
+        coverage:
+          file: 'clover-coverage.xml'
+          format: 'clover'
