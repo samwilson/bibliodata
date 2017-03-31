@@ -34,6 +34,13 @@ class ItemController extends Controller
     public function search(Request $request)
     {
         $term = $request->get('term');
+
+        // See if it's a Q-number.
+        if (preg_match('/Q[0-9]+/i', $term) === 1) {
+            return redirect(route('item', ['id' => $term]));
+        }
+
+        // Otherwise, run the query.
         $results = [];
         if ($term) {
             $itemList = new ItemList("SELECT ?item WHERE

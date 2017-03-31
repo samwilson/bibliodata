@@ -152,7 +152,6 @@ class Item {
         return $this->getId() !== false;
     }
 
-    
     public function getWikipediaIntro()
     {
         $cacheKey = 'wikipedia-intro-'.$this->lang;
@@ -173,9 +172,9 @@ class Item {
                 ]);
                 $response = $api->getRequest($req);
                 $page = array_shift($response['query']['pages']);
-                $extract = $page['']
-                Cache::put($cacheKey, $extract);
-                return $page['extract'];
+                $extract = $page['extract'];
+                Cache::put($cacheKey, $extract, 24*60);
+                return $extract;
             }
         }
         return '';
