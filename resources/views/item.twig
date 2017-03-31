@@ -28,7 +28,6 @@
             {{ work.wikipediaIntro|raw }}
 
             <ul class="list-inline">
-                <li>On other databases:</li>
                 <!-- LibraryThing work identifier -->
                 {% if work.claims.P1085 %}
                 <li>
@@ -42,16 +41,10 @@
             </ul>
         </div>
     </div>
-    <dl class="dl-horizontal">
-        {% for prop in book.properties %}
-            <dt>{{ attribute( prop.labels, lang).value }}</dt>
-            <dd></dd>
-        {% endfor %}
-    </dl>
 
     <h2>Editions</h2>
     {% if not work.editions %}
-        <p>No editions found</p>
+        <p>No editions found. That can't be right!</p>
     {% endif %}
     {% for edition in work.editions %}
     <div class="panel panel-default">
@@ -62,6 +55,43 @@
             {% if edition.publicationYear %}({{ edition.publicationYear }}){% endif %}
         </div>
         <div class="panel-body">
+            <div class="row">
+                {% if edition.images %}
+                    <div class="col-md-3">
+                    {% for image in edition.images %}<img src="{{ image }}" />{% endfor %}
+                    </div>
+                {% endif %}
+
+                <div class="col-md-3">
+                    {% if edition.publishers %}
+                    <p>
+                        Published by:
+                        {% for pub in edition.publishers %}
+                            {{ pub.title }}
+                        {% endfor %}
+                    </p>
+                    {% endif %}
+                </div>
+
+                <div class="col-md-3">
+                    {% if edition.wikisourceLink %}
+                        <ul class="list-unstyled">
+                        <li><a href="{{ edition.wikisourceLink.url }}">Read on Wikisource</a></li>
+                        <li>
+                        <a href="https://tools.wmflabs.org/wsexport/tool/book.php?lang={{ edition.wikisourceLink.lang }}&format=epub-3&page={{ edition.wikisourceLink.title }}" title="Download Epub">
+                        <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/d/d5/EPUB_silk_icon.svg/25px-EPUB_silk_icon.svg.png" alt="Epub icon" />
+                        Download Epub
+                        </a></li>
+                        <li>
+                        <a href="https://tools.wmflabs.org/wsexport/tool/book.php?lang={{ lang }}&format=pdf-a5&page=" title="Download PDF">
+                        <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/0/0e/Pdfreaders-f.svg/25px-Pdfreaders-f.svg.png" alt="PDF icon" />
+                        Download PDF
+                        </a>
+                        </li>
+                        </ul>
+                    {% endif %}
+                </div>
+            </div>
 
             <!-- LibraryThing work identifier -->
             {% if work.claims.P577 %}
@@ -73,13 +103,6 @@
             </p>
             {% endif %}
 
-            <p>Download now:
-                <a href="https://tools.wmflabs.org/wsexport/tool/book.php?lang={{ lang }}&format=epub-3&page=" title="Download Epub">
-                    <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/d/d5/EPUB_silk_icon.svg/25px-EPUB_silk_icon.svg.png" alt="Epub icon" /></a>
-                <a href="https://tools.wmflabs.org/wsexport/tool/book.php?lang={{ lang }}&format=pdf-a5&page=" title="Download PDF">
-                    <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/0/0e/Pdfreaders-f.svg/25px-Pdfreaders-f.svg.png" alt="PDF icon" /></a>
-            </p>
-            {{ dump(edition) }}
         </div>
     </div>
     {% endfor %}

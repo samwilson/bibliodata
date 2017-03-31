@@ -1,5 +1,5 @@
 {
-    "name": "samwilson/bookidata",
+    "name": "samwilson/bibliodata",
     "description": "A bibliographic database, backed by Wikidata.",
     "keywords": ["books", "Wikidata"],
     "license": "GPL-3.0",
