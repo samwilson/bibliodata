@@ -27,18 +27,13 @@
 
             {{ work.wikipediaIntro|raw }}
 
-            <ul class="list-inline">
-                <!-- LibraryThing work identifier -->
-                {% if work.claims.P1085 %}
-                <li>
-                    {{ attribute(work.P1085_metadata.labels, lang).value }}:
-                    <a href="https://www.librarything.com/work/{{ work.claims.P1085.0.mainsnak.datavalue.value }}" title="View on LibraryThing">
-                        <img src="http://www.librarything.com/press/logo4_medium.gif" />
-                    </a>
-                </li>
-                {% endif %}
-    
-            </ul>
+            {#<dl class="dl-horizontal">
+                {% for prop in work.standardProperties('work') %}
+                <dt>{{ prop.title }}</dt>
+                <dd>{{  }}</dd>
+                {% endfor %}
+            </dl>#}
+
         </div>
     </div>
 
@@ -64,31 +59,31 @@
 
                 <div class="col-md-3">
                     {% if edition.publishers %}
-                    <p>
-                        Published by:
+                    <ul class="list-inline">
+                        <li><em>Published by:</em></li>
                         {% for pub in edition.publishers %}
-                            {{ pub.title }}
+                            <li>{{ pub.title }}</li>
                         {% endfor %}
-                    </p>
+                    </ul>
                     {% endif %}
                 </div>
 
                 <div class="col-md-3">
                     {% if edition.wikisourceLink %}
-                        <ul class="list-unstyled">
-                        <li><a href="{{ edition.wikisourceLink.url }}">Read on Wikisource</a></li>
-                        <li>
-                        <a href="https://tools.wmflabs.org/wsexport/tool/book.php?lang={{ edition.wikisourceLink.lang }}&format=epub-3&page={{ edition.wikisourceLink.title }}" title="Download Epub">
-                        <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/d/d5/EPUB_silk_icon.svg/25px-EPUB_silk_icon.svg.png" alt="Epub icon" />
-                        Download Epub
-                        </a></li>
-                        <li>
-                        <a href="https://tools.wmflabs.org/wsexport/tool/book.php?lang={{ lang }}&format=pdf-a5&page=" title="Download PDF">
-                        <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/0/0e/Pdfreaders-f.svg/25px-Pdfreaders-f.svg.png" alt="PDF icon" />
-                        Download PDF
-                        </a>
-                        </li>
-                        </ul>
+                        <p><a href="{{ edition.wikisourceLink.url }}">Read on Wikisource</a></p>
+                        <p>
+                            <a href="https://tools.wmflabs.org/wsexport/tool/book.php?lang={{ edition.wikisourceLink.lang }}&format=epub-3&page={{ edition.wikisourceLink.title }}"
+                               title="Download Epub" class="btn btn-default">
+                            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/d/d5/EPUB_silk_icon.svg/25px-EPUB_silk_icon.svg.png" alt="Epub icon" />
+                            Download Epub
+                            </a>
+                        </p>
+                        <p>
+                            <a href="https://tools.wmflabs.org/wsexport/tool/book.php?lang={{ edition.wikisourceLink.lang }}&format=pdf-a5&page={{ edition.wikisourceLink.title }}" title="Download PDF" class="btn btn-default">
+                            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/0/0e/Pdfreaders-f.svg/25px-Pdfreaders-f.svg.png" alt="PDF icon" />
+                            Download PDF
+                            </a>
+                        </p>
                     {% endif %}
                 </div>
             </div>

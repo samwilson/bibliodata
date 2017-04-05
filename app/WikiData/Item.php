@@ -2,6 +2,7 @@
 
 namespace App\WikiData;
 
+use Exception;
 use Illuminate\Support\Facades\Cache;
 use Mediawiki\Api\MediawikiApi;
 use Mediawiki\Api\SimpleRequest;
@@ -23,14 +24,14 @@ class Item {
     /** @var MediawikiApi */
     protected $wdApi;
 
-    /** @var string[] */
-    protected $entities;
-    
     /** @var string */
     protected $lang;
     
     public function __construct($id, $lang)
     {
+        if (!is_string($id) || preg_match('/[QP][0-9]*/i', $id) !== 1) {
+            throw new Exception("Not a valid ID: ".var_export($id, true));
+        }
         $this->id = $id;
         $this->wdApi = new MediawikiApi('https://www.wikidata.org/w/api.php');
         $this->entities = [];
@@ -48,26 +49,29 @@ class Item {
         return "https://www.wikidata.org/wiki/$this->id";
     }
 
-    public function getStandardProperties()
+    public function getStandardProperties($type = 'work')
     {
-        $cacheKey = 'work_item_properties';
-        if (Cache::has($cacheKey)) {
-            return Cache::get($cacheKey);
+        if ($type !== 'work') {
+            $type = 'edition';
         }
-        $domCrawler = new Crawler();
-        $domCrawler->addHtmlContent(file_get_contents('https://www.wikidata.org/wiki/Wikidata:WikiProject_Books'));
-        $propCells = $domCrawler->filterXPath("//h3/span[@id='Work_item_properties']/../following-sibling::table[1]//td[2]/a");
+        $cacheKey = $type.'_item_property_IDs';
+        if (Cache::has($cacheKey)) {
+            $propIds = Cache::get($cacheKey);
+        } else {
+            $domCrawler = new Crawler();
+            $domCrawler->addHtmlContent(file_get_contents('https://www.wikidata.org/wiki/Wikidata:WikiProject_Books'));
+            $propCells = $domCrawler->filterXPath("//h3/span[@id='".ucfirst($type)."_item_properties']/../following-sibling::table[1]//td[2]/a");
+            $propIds = [];
+            $propCells->each(function(Crawler $node, $i) use (&$propIds) {
+                $propId = $node->text();
+                $propIds[] = $propId;
+            });
+            Cache::put($cacheKey, $propIds, 60);
+        }
         $workProperties = [];
-        $propCells->each(function(Crawler $node, $i) use (&$workProperties) {
-            $propId = $node->text();
-            $metadataRequest = new SimpleRequest('wbgetentities', ['ids' => $propId]);
-            $metadata = $this->wdApi->getRequest($metadataRequest);
-            if (!isset($metadata['success'])) {
-                return;
-            }
-            $workProperties[] = $metadata['entities'][$propId];
-        });
-        Cache::put($cacheKey, $workProperties, 60);
+        foreach ($propIds as $propId) {
+            $workProperties[] = new Item($propId, $this->lang);
+        }
         return $workProperties;
     }
 
@@ -80,6 +84,11 @@ class Item {
         foreach ($entity['claims'][$propertyId] as $claims) {
             foreach ($claims as $claim) {
                 $timeValue = $claim['datavalue']['value']['time'];
+                // Ugly workaround for imprecise dates. :-(
+                if (preg_match('/([0-9]{1,4})-00-00/', $timeValue, $matches) === 1) {
+                    $timeValue = $matches[1];
+                    return $timeValue;
+                }
                 $time = strtotime($timeValue);
                 return date($dateFormat, $time);
             }
@@ -127,14 +136,17 @@ class Item {
     {
         $entity = $this->getEntity($this->id);
         if (isset($entity['claims'][self::PROP_TITLE])) {
+            // Use the first title.
             foreach ($entity['claims'][self::PROP_TITLE] as $t) {
                 if ($t['mainsnak']['datavalue']['value']['language'] == $this->lang) {
                     return $t['mainsnak']['datavalue']['value']['text'];
                 }
             }
         } elseif (isset($entity['labels'][$this->lang]['value'])) {
+            // Or use the label in this language.
             return $entity['labels'][$this->lang]['value'];
         } else {
+            // Or just use the ID.
             return $entity['id'];
         }
     }

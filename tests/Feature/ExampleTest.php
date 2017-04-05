@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use Symfony\Component\VarDumper\VarDumper;
 use Tests\TestCase;
 use Illuminate\Foundation\Testing\WithoutMiddleware;
 use Illuminate\Foundation\Testing\DatabaseMigrations;
@@ -16,8 +17,8 @@ class ExampleTest extends TestCase
      */
     public function testBasicTest()
     {
-        $response = $this->get('/');
-
+        $response = $this->get('');
+        VarDumper::dump($response);
         $response->assertStatus(200);
     }
 }

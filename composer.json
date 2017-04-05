@@ -9,6 +9,8 @@
         "addwiki/mediawiki-api": "^0.7.1",
         "laravel/framework": "5.4.*",
         "laravel/tinker": "~1.0",
+        "league/oauth2-client": "^2.2",
+        "mediawiki/oauthclient": "^0.1",
         "rcrowe/twigbridge": "^0.9.4",
         "symfony/dom-crawler": "^3.2"
     },
