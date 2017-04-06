@@ -195,11 +195,12 @@ class Item {
         if (isset($entity['claims'][self::PROP_TITLE])) {
             // Use the first title.
             foreach ($entity['claims'][self::PROP_TITLE] as $t) {
-                if ($t['mainsnak']['datavalue']['value']['language'] == $this->lang) {
+                if ($t['mainsnak']['datavalue']['value']['language'] == $this->lang 
+                    && !empty($t['mainsnak']['datavalue']['value']['text'])) {
                     return $t['mainsnak']['datavalue']['value']['text'];
                 }
             }
-        } elseif (isset($entity['labels'][$this->lang]['value'])) {
+        } elseif (!empty($entity['labels'][$this->lang]['value'])) {
             // Or use the label in this language.
             return $entity['labels'][$this->lang]['value'];
         } else {
@@ -225,7 +226,7 @@ class Item {
         }
         $entity = $this->getEntity($this->id);
         if (!isset($entity['sitelinks'])) {
-            return '';
+            return [];
         }
         foreach ($entity['sitelinks'] as $sitelink) {
             if ($sitelink['site'] == $this->lang.'wiki') {
@@ -237,12 +238,15 @@ class Item {
                 ]);
                 $response = $api->getRequest($req);
                 $page = array_shift($response['query']['pages']);
-                $extract = $page['extract'];
-                Cache::put($cacheKey, $extract, 24*60);
-                return $extract;
+                $out = [
+                    'title' => $page['title'],
+                    'html' => $page['extract'],
+                ];
+                Cache::put($cacheKey, $out, 24*60);
+                return $out;
             }
         }
-        return '';
+        return [];
     }
     
     /**

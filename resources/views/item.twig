@@ -25,15 +25,20 @@
     <div class="row">
         <div class="col-md-12">
 
-            {{ work.wikipediaIntro|raw }}
+            {% if work.wikipediaIntro %}
+            {#<img src="https://{{ lang }}.wikipedia.org/static/images/project-logos/{{ lang }}wiki.png" class="pull-right" />#}
+            {{ work.wikipediaIntro.html|raw }}
+            <p><em><a href="https://{{ lang }}.wikipedia.org/wiki/{{ work.wikipediaIntro.title }}">Read more on Wikipedia&hellip;</a></em></p>
+            {% endif %}
 
-            {#<dl class="dl-horizontal">
-                {% for prop in work.standardProperties('work') %}
-                <dt>{{ prop.title }}</dt>
-                <dd>{{  }}</dd>
-                {% endfor %}
-            </dl>#}
-
+        </div>
+        <div class="col-md-3">
+            <dl class="dl-horizontal">
+                {#{% for prop in work.standardProperties('work') %}#}
+                {#<dt>{{ prop.title }}</dt>#}
+                {#<dd></dd>#}
+                {#{% endfor %}#}
+            </dl>
         </div>
     </div>
 
