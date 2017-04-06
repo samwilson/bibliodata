@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\WikiData\Item;
 use App\WikiData\ItemList;
+use App\WikiData\Query;
 use Illuminate\Http\Request;
 
 class ItemController extends Controller
@@ -14,7 +15,7 @@ class ItemController extends Controller
 
     public function item(Request $request, $itemId)
     {
-        $item = new Item($itemId, $this->lang);
+        $item = Item::factory($itemId, $this->lang);
 
         if (!$item->exists()) {
             abort(404, "Item $itemId not found");
@@ -43,7 +44,7 @@ class ItemController extends Controller
         // Otherwise, run the query.
         $results = [];
         if ($term) {
-            $itemList = new ItemList("SELECT ?item WHERE
+            $itemList = new Query("SELECT ?item WHERE
                 {
                   ?item wdt:P31* wd:Q571 .
                   ?item rdfs:label ?label .

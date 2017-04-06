@@ -11,6 +11,7 @@ use Symfony\Component\VarDumper\VarDumper;
 
 class Item {
 
+    const PROP_INSTANCE_OF = 'P31';
     const PROP_TITLE = 'P1476';
     const PROP_IMAGE = 'P18';
     const PROP_AUTHOR = 'P50';
@@ -27,7 +28,7 @@ class Item {
     /** @var string */
     protected $lang;
     
-    public function __construct($id, $lang)
+    protected function __construct($id, $lang)
     {
         if (!is_string($id) || preg_match('/[QP][0-9]*/i', $id) !== 1) {
             throw new Exception("Not a valid ID: ".var_export($id, true));
@@ -36,6 +37,27 @@ class Item {
         $this->wdApi = new MediawikiApi('https://www.wikidata.org/w/api.php');
         $this->entities = [];
         $this->lang = $lang;
+    }
+
+    /**
+     * Create a new Item object with class based on the item's 'instance of' statement.
+     * @param string $id
+     * @param string $lang
+     * @return Item
+     */
+    public static function factory($id, $lang)
+    {
+        $item = new Item($id, $lang);
+        foreach ($item->getPropertyOfTypeItem($id, self::PROP_INSTANCE_OF) as $instanceOf) {
+            // Try to find a class mating the 'instance of' name.
+            $possibleClassName = __NAMESPACE__.'\\'.studly_case($instanceOf->getTitle()).'Item';
+            if (class_exists($possibleClassName)) {
+                // This won't re-request the metadata, because that's cached.
+                return new $possibleClassName($id, $lang);
+            }
+        }
+        // If we're here, just leave it as a basic Item.
+        return $item;
     }
 
     public function getId()
@@ -75,7 +97,7 @@ class Item {
         return $workProperties;
     }
 
-    protected function getTimeProperty($entityId, $propertyId, $dateFormat = 'Y')
+    protected function getPropertyOfTypeTime($entityId, $propertyId, $dateFormat = 'Y')
     {
         $entity = $this->getEntity($entityId);
         if (!isset($entity['claims'][$propertyId])) {
@@ -100,22 +122,57 @@ class Item {
      * @param $propertyId
      * @return bool|Item[]
      */
-    protected function getItemProperty($entityId, $propertyId)
+    protected function getPropertyOfTypeItem($entityId, $propertyId)
+    {
+        $entity = $this->getEntity($entityId);
+        if (!isset($entity['claims'][$propertyId])) {
+            return [];
+        }
+        $items = [];
+        foreach ($entity['claims'][$propertyId] as $claim) {
+            $items[] = Item::factory($claim['mainsnak']['datavalue']['value']['id'], $this->lang);
+        }
+        return $items;
+    }
+
+    public function getPropertyOfTypeUrl($entityId, $propertyId)
     {
         $entity = $this->getEntity($entityId);
         if (!isset($entity['claims'][$propertyId])) {
             return false;
         }
-        $items = [];
+        $urls = [];
         foreach ($entity['claims'][$propertyId] as $claim) {
-            $items[] = new Item($claim['mainsnak']['datavalue']['value']['id'], $this->lang);
+            $urls[] = $claim['mainsnak']['datavalue']['value'];
         }
-        return $items;
+        return $urls;
     }
 
-    public function getPublicationYear()
+    public function getPropertyOfTypeExternalIdentifier($entityId, $propertyId)
     {
-        return $this->getTimeProperty($this->id, self::PROP_PUBLICATION_DATE, 'Y');
+        $entity = $this->getEntity($entityId);
+        if (!isset($entity['claims'][$propertyId])) {
+            return false;
+        }
+        $idents = [];
+        foreach ($entity['claims'][$propertyId] as $claim) {
+            $qualifiers = [];
+            foreach (array_get($claim, 'qualifiers', []) as $qualsInfo) {
+                foreach ($qualsInfo as $qualInfo) {
+                    $qualProp = new Item($qualInfo['property'], 'en');
+                    $propTitle = $qualProp->getTitle();
+                    if (!isset($qualifiers[$propTitle])) {
+                        $qualifiers[$propTitle] = [];
+                    }
+                    $qualifiers[$propTitle][] = $qualInfo['datavalue']['value'];
+                }
+            }
+            $idents[] = [
+                'qualifiers' => $qualifiers,
+                'value' => $claim['mainsnak']['datavalue']['value'],
+            ];
+        }
+        return $idents;
     }
 
     /**
@@ -149,36 +206,6 @@ class Item {
             // Or just use the ID.
             return $entity['id'];
         }
-    }
-
-    public function getPublishers()
-    {
-        return $this->getItemProperty($this->getId(), self::PROP_PUBLISHER);
-    }
-
-    public function getAuthors()
-    {
-        $entity = $this->getEntity($this->id);
-        if (!isset($entity['claims'][self::PROP_AUTHOR])) {
-            return [];
-        }
-        $authors = [];
-        foreach ($entity['claims'][self::PROP_AUTHOR] as $authorClaim) {
-            $authorId = $authorClaim['mainsnak']['datavalue']['value']['id'];
-            $authors[] = new Item($authorId, $this->lang);
-        }
-        return $authors;
-    }
-
-    public function getEditions()
-    {
-        $sparql = "SELECT ?item WHERE { ?item wdt:".self::PROP_EDITION_OR_TRANSLATION_OF." wd:".$this->getId()." }";
-        $itemList = new ItemList($sparql, $this->lang);
-        $editions = $itemList->getItems();
-        usort($editions, function(Item $a, Item $b){
-            return $a->getPublicationYear() - $b->getPublicationYear();
-        });
-        return $editions;
     }
 
     /**
@@ -217,31 +244,7 @@ class Item {
         }
         return '';
     }
-
-    /**
-     * Get information about the Wikisource sitelink.
-     * An edition should only ever be present on one Wikisource.
-     * @return string[]
-     */
-    public function getWikisourceLink()
-    {
-        $entity = $this->getEntity($this->id);
-        if (!isset($entity['sitelinks'])) {
-            return [];
-        }
-        foreach ($entity['sitelinks'] as $sitelink) {
-            if (strpos($sitelink['site'], 'wikisource') !== false) {
-                $lang = substr($sitelink['site'], 0, strpos($sitelink['site'], 'wikisource'));
-                return [
-                    'title' => $sitelink['title'],
-                    'url' => "https://$lang.wikisource.org/wiki/".$sitelink['title'],
-                    'lang' => $lang,
-                ];
-            }
-        }
-        return [];
-    }
-
+    
     /**
      * Get URLs of images for this item.
      * @return string[]

@@ -70,7 +70,9 @@
 
                 <div class="col-md-3">
                     {% if edition.wikisourceLink %}
-                        <p><a href="{{ edition.wikisourceLink.url }}">Read on Wikisource</a></p>
+                        <p>
+                            <a href="{{ edition.wikisourceLink.url }}" class="btn btn-default">Read on Wikisource</a>
+                        </p>
                         <p>
                             <a href="https://tools.wmflabs.org/wsexport/tool/book.php?lang={{ edition.wikisourceLink.lang }}&format=epub-3&page={{ edition.wikisourceLink.title }}"
                                title="Download Epub" class="btn btn-default">
@@ -86,6 +88,37 @@
                         </p>
                     {% endif %}
                 </div>
+
+                <div class="col-md-3">
+                    {% if edition.wikisourceIndexPages %}
+                        <p>On Wikisource:</p>
+                        <ul>
+                        {% for indexPage in edition.wikisourceIndexPages %}
+                            <li><a href="{{ indexPage }}">{{ indexPage }}</a></li>
+                        {% endfor %}
+                        </ul>
+                    {% endif %}
+                </div>
+                <div class="col-md-3">
+                    {% if edition.internetArchiveIds %}
+                        <p>On the Internet Archive:</p>
+                        <ul>
+                            {% for ident in edition.internetArchiveIds %}
+                                <li>
+                                    <a href="https://archive.org/details/{{ ident.value }}">{{ ident.value }}</a>
+                                    (<a href="https://tools.wmflabs.org/ia-upload/commons/init?iaId={{ ident.value }}">upload to Commons</a>)
+                                    {% if ident.qualifiers %}<br />{% endif %}
+                                    {% for type,quals in ident.qualifiers %}
+                                        {{ type }}: {% for q in quals %}{{ q }}{% endfor %}
+                                    {% endfor %}
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    {% endif %}
+
+                </div>
+
+                
             </div>
 
             <!-- LibraryThing work identifier -->

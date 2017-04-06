@@ -4,8 +4,9 @@ namespace App\WikiData;
 
 use Exception;
 use SimpleXmlElement;
+use Symfony\Component\VarDumper\VarDumper;
 
-class ItemList
+class Query
 {
 
     protected $query;
@@ -28,7 +29,7 @@ class ItemList
         foreach ($xml->results->result as $res) {
             $result = $this->getBindings($res);
             $id = substr($result['item'], strrpos($result['item'], '/') + 1);
-            $item = new Item($id, $this->lang);
+            $item = Item::factory($id, $this->lang);
             $results[] = $item;
         }
         return $results;
