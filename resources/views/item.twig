@@ -25,8 +25,8 @@
     <div class="row">
         <div class="col-md-12">
 
-            {% if work.wikipediaIntro %}
-            {#<img src="https://{{ lang }}.wikipedia.org/static/images/project-logos/{{ lang }}wiki.png" class="pull-right" />#}
+            {% if work.wikipediaIntro.html %}
+            <img src="https://{{ lang }}.wikipedia.org/static/images/project-logos/{{ lang }}wiki.png" class="pull-right" />
             {{ work.wikipediaIntro.html|raw }}
             <p><em><a href="https://{{ lang }}.wikipedia.org/wiki/{{ work.wikipediaIntro.title }}">Read more on Wikipedia&hellip;</a></em></p>
             {% endif %}

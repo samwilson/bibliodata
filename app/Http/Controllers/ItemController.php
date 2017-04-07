@@ -56,6 +56,7 @@ class ItemController extends Controller
             $results = $itemList->getItems();
         }
         return view('search_results')
+            ->with('term', $term)
             ->with('lang', $this->lang)
             ->with('results', $results);
     }
