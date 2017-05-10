@@ -1,0 +1,31 @@
+{
+    "name": "samwilson/bibliodata",
+    "description": "A bibliographic database for WordPress, backed by Wikidata.",
+    "type": "wordpress-plugin",
+    "license": "GPL-3.0+",
+    "authors": [
+        {
+            "name": "Sam Wilson",
+            "email": "sam@samwilson.id.au"
+        }
+    ],
+    "autoload": {
+        "psr-4": {
+            "Samwilson\\Bibliodata\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Samwilson\\Bibliodata\\Tests\\": "tests/"
+        }
+    },
+    "require": {
+        "mediawiki/oauthclient": "^0.1",
+        "addwiki/mediawiki-api-base": "^2.0",
+        "symfony/dom-crawler": "^3.0",
+        "tedivm/stash": "^v0.14"
+    },
+    "require-dev": {
+        "wp-coding-standards/wpcs": "^0.11"
+    }
+}
