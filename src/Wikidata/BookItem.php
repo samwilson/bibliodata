@@ -4,6 +4,19 @@ namespace Samwilson\Bibliodata\Wikidata;
 
 class BookItem extends Item {
 
+	const ITEM_BOOK = 'Q571';
+	const PROP_SUBTITLE = 'P1680';
+	const PROP_GENRE = 'P136';
+	const PROP_SUBJECT = 'P921';
+
+	public function getSubtitle() {
+		return $this->getPropertyOfTypeText(self::PROP_SUBTITLE);
+	}
+
+	public function setSubtitle( $subtitle ) {
+		$this->setPropertyOfTypeText( self::PROP_SUBTITLE, $subtitle );
+	}
+
 	public function getAuthors() {
 		$entity = $this->getEntity( $this->id );
 		if ( ! isset( $entity['claims'][ self::PROP_AUTHOR ] ) ) {
@@ -19,9 +32,17 @@ class BookItem extends Item {
 		return $authors;
 	}
 
+	/**
+	 * @return Item[]
+	 */
+	public function getSubjects() {
+		return [];
+	}
+
 	public function getEditions() {
-		$sparql   = "SELECT ?item WHERE { ?item wdt:" . self::PROP_EDITION_OR_TRANSLATION_OF . " wd:" . $this->getId() . " }";
-		$query    = new Query( $sparql, $this->lang );
+		$sparql = "SELECT ?item WHERE { ?item wdt:" . self::PROP_EDITION_OR_TRANSLATION_OF . " wd:" . $this->getId() . " }";
+		$query = new Query( $sparql, $this->lang );
+		$query->setCache($this->cache);
 		$editions = $query->getItems();
 		usort( $editions, function ( Item $a, Item $b ) {
 			if ( $a instanceof EditionItem and $b instanceof EditionItem ) {
@@ -36,4 +57,5 @@ class BookItem extends Item {
 	public function newEdition() {
 		
 	}
+
 }

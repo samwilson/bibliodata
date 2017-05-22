@@ -20,8 +20,11 @@ use Stash\Pool;
 
 // Route POST requests.
 add_action( 'admin_init', function() {
-	if (isset($_POST['page']) && $_POST['page'] == 'bibliodata-options' ) {
-		bibliodata_router('Options' );
+	// See if this is a Bibliodata page that's being POSTed.
+	if (isset($_POST['page']) && substr($_POST['page'], 0, 10) == 'bibliodata') {
+		// Extract the controller name from the page name.
+		$controllerName = substr($_POST['page'], 11);
+		bibliodata_router( $controllerName );
 	}
 } );
 
@@ -46,7 +49,7 @@ function bibliodata_router($controllerName) {
 	$cachePool = new Pool($driver);
 
 	// Controller.
-	$controllerClassName = '\\Samwilson\\Bibliodata\\Controllers\\'.$controllerName.'Controller';
+	$controllerClassName = '\\Samwilson\\Bibliodata\\Controllers\\' . ucfirst( $controllerName ) . 'Controller';
 	/** @var ControllerBase $controller */
 	$controller = new $controllerClassName();
 	$action = ( isset( $_REQUEST['action'] ) && is_callable( [ $controller, $_REQUEST['action'] ] ) )

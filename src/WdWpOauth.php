@@ -13,6 +13,9 @@ class WdWpOauth {
 	/** @var Client */
 	protected $client;
 
+	/** @var string The current CSRF token. */
+	protected $csrfToken;
+
 	/**
 	 * Get the API key.
 	 * @return string
@@ -37,7 +40,7 @@ class WdWpOauth {
 	}
 
 	/**
-	 * @return bool|object
+	 * @return bool|\stdClass
 	 */
 	public function getIdentity() {
 		$oauthAccessToken = $this->getAccessToken();
@@ -73,8 +76,16 @@ class WdWpOauth {
 	 * @return mixed
 	 * @throws Exception
 	 */
-	public function makeCall($data) {
+	public function makeCall( $data, $needsToken = false ) {
 		$data['format'] = 'json';
+		if ($needsToken) {
+			if (!$this->csrfToken) {
+				$editToken = $this->makeCall( [ 'action' => 'query', 'meta' => 'tokens' ] );
+				$this->csrfToken = $editToken->query->tokens->csrftoken;
+			}
+			$data['token'] = $this->csrfToken;
+		}
+		$this->getOauthClient()->setExtraParams($data);
 		$url = 'https://www.wikidata.org/w/api.php';
 		$response = $this->getOauthClient()->makeOAuthCall( $this->getAccessToken(), $url, true, $data );
 		$result = json_decode($response);

@@ -77,17 +77,15 @@ class Item {
 	 *
 	 * @return Item
 	 */
-	public static function create($lang, CacheItemPoolInterface $cache) {
+	public static function create( $lang, CacheItemPoolInterface $cache ) {
 		$wdWpOauth = new WdWpOauth();
-		$editToken = $wdWpOauth->makeCall(['action' => 'query', 'meta' => 'tokens']);
 		$params = [
 			'action'=>'wbeditentity',
 			'new'=>'item',
-			'token' => $editToken->query->tokens->csrftoken,
 			'data' => '{}',
 		];
-		$wdWpOauth->getOauthClient()->setExtraParams($params);
-		$newItem = $wdWpOauth->makeCall($params);
+		//$wdWpOauth->getOauthClient()->setExtraParams($params);
+		$newItem = $wdWpOauth->makeCall($params, true);
 		return self::factory($newItem->entity->id, $lang, $cache);
 	}
 
@@ -97,7 +95,6 @@ class Item {
 
 	public function getId() {
 		$entity = $this->getEntity( $this->id );
-
 		return isset( $entity['id'] ) ? $entity['id'] : false;
 	}
 
@@ -156,13 +153,15 @@ class Item {
 	}
 
 	/**
-	 * @param $entityId
-	 * @param $propertyId
+	 * Get the Item that is referred to by the specified item's property.
 	 *
-	 * @return bool|Item[]
+	 * @param string $itemId
+	 * @param string $propertyId
+	 *
+	 * @return Item[]
 	 */
-	protected function getPropertyOfTypeItem( $entityId, $propertyId ) {
-		$entity = $this->getEntity( $entityId );
+	protected function getPropertyOfTypeItem( $itemId, $propertyId ) {
+		$entity = $this->getEntity( $itemId );
 		if ( ! isset( $entity['claims'][ $propertyId ] ) ) {
 			return [];
 		}
@@ -172,6 +171,46 @@ class Item {
 		}
 
 		return $items;
+	}
+
+	public function setPropertyOfTypeItem( $property, $itemId ) {
+		$itemIdNumeric = substr( $itemId, 1 );
+
+		// First see if this property already exists, and that it is different from what's being set.
+		$entity = $this->getEntity($this->id);
+		if (!empty($entity['claims'][$property])) {
+			// Get the first claim, and update it if necessary.
+			$claim = array_shift($entity['claims'][$property]);
+			if ($claim['mainsnak']['datavalue']['value']['id'] == $itemId) {
+				// Already is the required value, no need to change.
+				return;
+			}
+			$claim['mainsnak']['datavalue']['value']['id'] = $itemId;
+			$claim['mainsnak']['datavalue']['value']['numeric-id'] = $itemIdNumeric;
+			$apiParams = [
+				'action' => 'wbsetclaim',
+				'claim' => wp_json_encode( $claim ),
+			];
+		}
+
+		// If no claim was found (and modified) above, create a new claim.
+		if ( !isset( $apiParams ) ) {
+			$apiParams = [
+				'action' => 'wbcreateclaim',
+				'entity' => $this->getId(),
+				'property' => $property,
+				'snaktype' => 'value',
+				'value' => wp_json_encode( [ 'entity-type' => 'item', 'numeric-id' => $itemIdNumeric ] ),
+			];
+		}
+
+		// Save the property.
+		$wdWpOauth = new WdWpOauth();
+		$wdWpOauth->makeCall( $apiParams, true );
+
+		// Clear the cache.
+		$this->cache->deleteItem($this->getEntityCacheKey($this->id));
+
 	}
 
 	public function getPropertyOfTypeUrl( $entityId, $propertyId ) {
@@ -218,6 +257,69 @@ class Item {
 	}
 
 	/**
+	 * Get a single-valued text property.
+	 * @param string $property One of the PROP_* constants.
+	 * @return string|boolean The value, or false if it can't be found.
+	 */
+	public function getPropertyOfTypeText( $property ) {
+		$entity = $this->getEntity( $this->id );
+		if ( isset( $entity['claims'][ $property ] ) ) {
+			// Use the first title.
+			foreach ( $entity['claims'][ $property ] as $t ) {
+				if ( $t['mainsnak']['datavalue']['value']['language'] == $this->lang
+				     && ! empty( $t['mainsnak']['datavalue']['value']['text'] )
+				) {
+					return $t['mainsnak']['datavalue']['value']['text'];
+				}
+			}
+		}
+		return false;
+	}
+
+	/**
+	 * Set a single-valued text property.
+	 * @param string $property One of the PROP_* constants.
+	 * @param string $value The value.
+	 */
+	public function setPropertyOfTypeText( $property, $value ) {
+		// First see if this property already exists, and that it is different from what's being set.
+		$entity = $this->getEntity($this->id);
+		if (!empty($entity['claims'][$property])) {
+			// Find this language's claim (if there is one).
+			foreach ($entity['claims'][$property] as $claim) {
+				if ($claim['mainsnak']['datavalue']['value']['language'] == $this->lang) {
+					// Modify this claim's text value.
+					$titleClaim = $claim;
+					$titleClaim['mainsnak']['datavalue']['value']['text'] = $value;
+					$setTitleParams = [
+						'action' => 'wbsetclaim',
+						'claim' => wp_json_encode( $titleClaim ),
+					];
+					continue;
+				}
+			}
+		}
+
+		// If no claim was found (and modified) above, create a new claim.
+		if (!isset($setTitleParams)) {
+			$setTitleParams = [
+				'action' => 'wbcreateclaim',
+				'entity' => $this->getId(),
+				'property' => $property,
+				'snaktype' => 'value',
+				'value' => wp_json_encode( [ 'text' => $value, 'language' => $this->lang ] ),
+			];
+		}
+
+		// Save the property.
+		$wdWpOauth = new WdWpOauth();
+		$wdWpOauth->makeCall( $setTitleParams, true );
+
+		// Clear the cache.
+		$this->cache->deleteItem($this->getEntityCacheKey($this->id));
+	}
+
+	/**
 	 * If this is an edition (i.e. is an edition or translation of another item), then this gets the work's ID.
 	 * Otherwise, it's false.
 	 * @return string|boolean
@@ -231,10 +333,14 @@ class Item {
 		return false;
 	}
 
+	/**
+	 * Get the title of this item. This may not actually be the 'title' property.
+	 * @return string
+	 */
 	public function getTitle() {
 		$entity = $this->getEntity( $this->id );
+		// Use the first title in our language.
 		if ( isset( $entity['claims'][ self::PROP_TITLE ] ) ) {
-			// Use the first title.
 			foreach ( $entity['claims'][ self::PROP_TITLE ] as $t ) {
 				if ( $t['mainsnak']['datavalue']['value']['language'] == $this->lang
 				     && ! empty( $t['mainsnak']['datavalue']['value']['text'] )
@@ -242,13 +348,17 @@ class Item {
 					return $t['mainsnak']['datavalue']['value']['text'];
 				}
 			}
-		} elseif ( ! empty( $entity['labels'][ $this->lang ]['value'] ) ) {
-			// Or use the label in this language.
-			return $entity['labels'][ $this->lang ]['value'];
-		} else {
-			// Or just use the ID.
-			return $entity['id'];
 		}
+		// Or use the label in this language.
+		if ( ! empty( $entity['labels'][ $this->lang ]['value'] ) ) {
+			return $entity['labels'][ $this->lang ]['value'];
+		}
+		// Or just use the ID.
+		return $entity['id'];
+	}
+
+	public function setTitle( $newTitle ) {
+		$this->setPropertyOfTypeText( self::PROP_TITLE, $newTitle );
 	}
 
 	/**
@@ -309,9 +419,9 @@ class Item {
 	 *
 	 * @return bool
 	 */
-	protected function getEntity( $id ) {
-		$cacheKey = "entities.$id";
-		if ( $this->cache->hasItem( $cacheKey ) ) {
+	protected function getEntity( $id, $ignoreCache = false ) {
+		$cacheKey = $this->getEntityCacheKey( $id );
+		if ( !$ignoreCache && $this->cache->hasItem( $cacheKey ) ) {
 			return $this->cache->getItem( $cacheKey )->get();
 		}
 		$metadataRequest = new SimpleRequest( 'wbgetentities', [ 'ids' => $id ] );
@@ -327,4 +437,12 @@ class Item {
 		return $metadata;
 	}
 
+	/**
+	 * @param $id
+	 *
+	 * @return string
+	 */
+	protected function getEntityCacheKey( $id ) {
+		return 'entities'.$id;
+	}
 }
