@@ -9,6 +9,18 @@ class BookItem extends Item {
 	const PROP_GENRE = 'P136';
 	const PROP_SUBJECT = 'P921';
 
+	public static function getBookTypes($lang = 'en', $cache) {
+		$sparql = "SELECT ?item WHERE {
+			?item wdt:P279 wd:Q571 .
+			?item rdfs:label ?label .
+			FILTER(LANG(?label) = '$lang') .
+			} ORDER BY ?label ";
+		$query = new Query($sparql, $lang);
+		$query->setCache($cache);
+		$bookType = Item::factory(self::ITEM_BOOK, $lang, $cache);
+		return [$bookType] + $query->getItems();
+	}
+
 	public function getSubtitle() {
 		return $this->getPropertyOfTypeText(self::PROP_SUBTITLE);
 	}

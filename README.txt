@@ -40,3 +40,8 @@ directory take precedence. For example, `/assets/screenshot-1.png` would win ove
 == Changelog ==
 
 None yet.
+
+== Kudos ==
+
+* https://commons.wikimedia.org/wiki/File:Wikidata_stamp.png
+* https://commons.wikimedia.org/wiki/File:Wikidata-logo-without-paddings.svg

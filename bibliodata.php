@@ -26,6 +26,8 @@ add_action( 'admin_init', function() {
 		$controllerName = substr($_POST['page'], 11);
 		bibliodata_router( $controllerName );
 	}
+	// Add the Bibliodata CSS.
+	wp_enqueue_style( 'bibliodata-css', plugins_url( 'bibliodata' ) . '/assets/style.css' );
 } );
 
 // Route GET requests (via menu pages).

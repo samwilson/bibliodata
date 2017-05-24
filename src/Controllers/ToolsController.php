@@ -47,6 +47,7 @@ class ToolsController extends ControllerBase {
 			$itemId = isset($_REQUEST['item']) ? $_REQUEST['item'] : null;
 			$work = Item::factory($itemId, 'en', $this->cache);
 		}
+		$bookTypes = BookItem::getBookTypes('en', $this->cache);
 		require_once WP_PLUGIN_DIR.'/bibliodata/templates/edit.html.php';
 	}
 
@@ -70,6 +71,12 @@ class ToolsController extends ControllerBase {
 		}
 		if (isset($_POST['subtitle'])) {
 			$work->setSubtitle( $_POST['subtitle']);
+		}
+
+		// Save editions.
+		$edition_data = isset($_POST['editions']) ? $_POST['editions'] : [];
+		foreach ($edition_data as $edition_datum) {
+			
 		}
 
 		// Redirect back to the same edit form.

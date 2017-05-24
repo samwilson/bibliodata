@@ -10,7 +10,6 @@ use Mediawiki\Api\SimpleRequest;
 use Psr\Cache\CacheItemPoolInterface;
 use Samwilson\Bibliodata\WdWpOauth;
 use Symfony\Component\DomCrawler\Crawler;
-use Wikibase\DataModel\Entity\Property;
 
 class Item {
 
@@ -359,6 +358,11 @@ class Item {
 
 	public function setTitle( $newTitle ) {
 		$this->setPropertyOfTypeText( self::PROP_TITLE, $newTitle );
+	}
+
+	public function getInstanceOf() {
+		$instancesOf = $this->getPropertyOfTypeItem( $this->getId(), self::PROP_INSTANCE_OF );
+		return array_shift($instancesOf);
 	}
 
 	/**
